@@ -41,14 +41,14 @@ Antes de começar, verifique se você tem:
 1. Clone o repositório:
 
 ```shell
-git clone https://github.com/manteguinha/AutoChangelog.git
+git clone https://github.com/seu-usuario/AutoChangelog.git
 cd AutoChangelog
 ```
 
-2. Execute o [changelog.py](/changelog.py) diretamente no diretório que deseja criar o CHANGELOG.md:
+2. Execute o [changelog.py](/caminho/para/o/changelog.py) diretamente no diretório que deseja criar o CHANGELOG.md:
 
 ```shell
-python changelog.py
+python changelog.py /caminho/do/diretorio
 ```
 
 ### 📝 Configuração Adicional
@@ -72,5 +72,5 @@ Se deseja contribuir para este projeto, aqui está como pode fazer:
 ---
 
 <p align="center">
-  Feito com 💜 por <a href="https://mvms.dev" target="_blank">Marcos Vinicius</a>
+  Feito com 💜 por <a href="https://seu-site.com" target="_blank">Seu Nome</a>
 </p>

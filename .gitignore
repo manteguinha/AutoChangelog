@@ -1,0 +1,23 @@
+# Arquivos de atalhos do Windows
+Thumbs.db
+Desktop.ini
+
+# Arquivos do Mac
+.DS_Store
+
+# Arquivos do VSCode
+.vscode/
+
+# Ambiente
+.env
+
+# Cache e arquivos compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs e dados temporários
+*.log
+*.sql
+*.sqlite

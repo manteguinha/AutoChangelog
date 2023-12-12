@@ -27,10 +27,16 @@ class ChangelogGenerator:
             if not self.eh_repositorio_git():
                 print("Erro: Este diretório não é um repositório Git válido.")
                 return
-            return subprocess.check_output(['git', 'log', '-1', '--pretty=%B'], stderr=subprocess.STDOUT).decode('utf-8').strip()
+
+            # Obtém os logs dos commits, adicionando um hífen no início de cada mensagem
+            logs = subprocess.check_output(['git', 'log', '-1', '--pretty=%B'], stderr=subprocess.STDOUT).decode('utf-8').strip()
+            logs_with_hyphen = "\n- " + "\n- ".join(logs.splitlines())
+
+            return logs_with_hyphen
         except subprocess.CalledProcessError as e:
             print(f"Erro ao obter o último log do commit: {e.output.decode('utf-8')}")
             return ""
+
 
     def changelog_existe(self):
         return os.path.exists('CHANGELOG.md')
@@ -47,7 +53,7 @@ class ChangelogGenerator:
     def adicionar_ao_changelog(self, versao, log):
         try:
             agora = datetime.now().strftime("%Y-%m-%d")
-            entrada_changelog = f"### {f'{versao} - ' if versao else ''}{agora}\n- {log}\n"
+            entrada_changelog = f"### {f'{versao} - ' if versao else ''}{agora}\n{log}\n"
 
             if not self.commit_registrado(entrada_changelog):
                 with open('CHANGELOG.md', 'r+') as arquivo:

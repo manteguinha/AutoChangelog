@@ -9,11 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="#sobre">Sobre</a> •
-  <a href="#funcionalidades">Funcionalidades</a> •
-  <a href="#como-usar">Como Usar</a> •
-  <a href="#contribuindo">Contribuindo</a> •
-  <a href="#licenca">Licença</a>
+  <a href="#📜-sobre">Sobre</a> •
+  <a href="#✨-funcionalidades">Funcionalidades</a> •
+  <a href="#🚀-como-usar">Como Usar</a> •
+  <a href="#💖-contribuindo">Contribuindo</a>
 </p>
 
 ## 📜 Sobre

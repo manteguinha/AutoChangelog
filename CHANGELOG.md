@@ -26,3 +26,8 @@
 - O arquivo CHANGELOG.md foi atualizado para corrigir links e informações. O link para clonar o repositório foi corrigido para apontar para o repositório correto. Além disso, o link para o site do autor foi substituído pelo link para o seu próprio site.
 
 - No arquivo changelog.py, foi adicionado um hífen no início de cada mensagem de log obtida dos commits. Isso melhora a legibilidade do changelog gerado.
+
+### 2023-12-11
+- 🐛 fix(changelog.py): corrige a formatação do log do commit no CHANGELOG
+- ✨ feat(changelog.py): adiciona verificação se o arquivo package.json existe e obtém a versão
+- A formatação do log do commit no CHANGELOG foi corrigida para adicionar um hífen no início de cada linha. Isso garante que o log seja formatado corretamente no arquivo CHANGELOG.md. Além disso, foi adicionada uma verificação para verificar se o arquivo package.json existe e obter a versão do projeto a partir dele. Isso permite que o CHANGELOG registre a versão atual do projeto.

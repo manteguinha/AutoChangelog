@@ -71,5 +71,5 @@ Se deseja contribuir para este projeto, aqui está como pode fazer:
 ---
 
 <p align="center">
-  Feito com 💜 por <a href="https://seu-site.com" target="_blank">Seu Nome</a>
+  Feito com 💜 por <a href="https://mvms.dev" target="_blank">Marcos Vinicius</a>
 </p>

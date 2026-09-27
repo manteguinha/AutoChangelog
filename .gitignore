@@ -1,23 +1,28 @@
-# Arquivos de atalhos do Windows
+# Sistema operacional
+.DS_Store
 Thumbs.db
 Desktop.ini
 
-# Arquivos do Mac
-.DS_Store
-
-# Arquivos do VSCode
+# Editores
 .vscode/
+.idea/
 
 # Ambiente
 .env
+.venv/
+venv/
 
-# Cache e arquivos compilados
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Logs e dados temporários
 *.log
-*.sql
 *.sqlite

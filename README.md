@@ -1,71 +1,204 @@
 <p align="center">
-  <img src="/changelog.jpeg" width="200" style="border-radius: 10%;" alt="Project Logo or Banner" />
+  <img src="changelog.jpeg" width="200" alt="Logo do AutoChangelog" />
 </p>
 
-<h1 align="center">✨ AutoChangelog ✨</h1>
+<h1 align="center">AutoChangelog</h1>
 
 <p align="center">
-  <i>Uma ferramenta para registrar todas as alterações no projeto de forma organizada.</i>
+  <i>Gera e mantém o <code>CHANGELOG.md</code> do seu projeto a partir do histórico do Git — com ou sem IA.</i>
 </p>
 
 <p align="center">
-  <a href="#📜-sobre">Sobre</a> •
-  <a href="#✨-funcionalidades">Funcionalidades</a> •
-  <a href="#🚀-como-usar">Como Usar</a> •
-  <a href="#💖-contribuindo">Contribuindo</a>
+  <a href="#sobre">Sobre</a> •
+  <a href="#instalação">Instalação</a> •
+  <a href="#uso">Uso</a> •
+  <a href="#modo-com-ia">Modo com IA</a> •
+  <a href="#configuração">Configuração</a> •
+  <a href="#desenvolvimento">Desenvolvimento</a>
 </p>
 
-## 📜 Sobre
+## Sobre
 
-Seja bem-vindo à ferramenta de Registro de Alterações (CHANGELOG)! ✨
+O AutoChangelog lê as tags e os commits do seu repositório e escreve um `CHANGELOG.md` no padrão
+[Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), em português:
 
-Este projeto oferece um método para registrar todas as mudanças e atualizações realizadas em seu código. Utilizando comandos do Git e manipulação de arquivos, o `CHANGELOG.md` é mantido atualizado automaticamente sempre que um novo commit é feito.
+- **Uma seção por versão**: cada tag no formato de versão (`v1.2.0`, `1.2.0`) vira um lançamento com
+  a data da tag; os commits depois da última tag ficam em **[Não lançado]**.
+- **Agrupado por tipo de mudança**, a partir de [Conventional Commits](https://www.conventionalcommits.org/pt-br/)
+  (com ou sem [gitmoji](https://gitmoji.dev/)):
 
-## ✨ Funcionalidades
+  | Tipo de commit                          | Seção            |
+  | --------------------------------------- | ---------------- |
+  | `feat`                                  | Adicionado       |
+  | `refactor`, `perf`                      | Alterado         |
+  | `deprecate`                             | Obsoleto         |
+  | `revert`, `remove`                      | Removido         |
+  | `fix`                                   | Corrigido        |
+  | `security`                              | Segurança        |
+  | `tipo!:` ou rodapé `BREAKING CHANGE:`   | ⚠️ Incompatível  |
+  | `docs`, `chore`, `test`, `ci`, `build`, `style` | Outros (só com `--incluir-todos`) |
+  | Commits fora do padrão                  | Alterado         |
 
-- 📝 **Registro de Alterações Automático**: As alterações são registradas de forma automática no arquivo `CHANGELOG.md`.
-- ⚙️ **Verificação de Versão**: Verifica a versão do `package.json` (se existir) para registrar informações relevantes.
+  Linhas do corpo do commit que também seguem o padrão (como as geradas pelo
+  [OpenCommit](https://github.com/di-sukharev/opencommit)) viram itens extras.
+- **Links** para cada commit e comparações entre versões no GitHub e no GitLab.
+- **Atualização segura**: versões que já estão no arquivo são mantidas exatamente como estão (inclusive
+  suas edições manuais); só versões novas são adicionadas e o bloco [Não lançado] é refeito. Rodar
+  duas vezes seguidas não muda nada.
+- **Com ou sem IA**: sem IA o resultado é determinístico; com IA (Anthropic, OpenAI ou Ollama) as
+  entradas são reescritas em linguagem clara para quem usa o projeto.
+- **Sem dependências** no modo sem IA — só Python e Git.
 
-## 🚀 Como Usar
+Exemplo de saída:
 
-### Pré-requisitos
+```markdown
+## [1.1.0] - 2026-03-10
 
-Antes de começar, verifique se você tem:
+### Adicionado
 
-- Python (versão 3.8 ou superior)
-- Git instalado e configurado
+- **cli:** Adiciona a opção --simular ([a1b2c3d](https://github.com/dono/projeto/commit/a1b2c3d...))
 
-### ⚙️ Instalação
+### Corrigido
 
-1. Clone o repositório:
+- Corrige falha ao ler arquivos vazios ([e4f5a6b](https://github.com/dono/projeto/commit/e4f5a6b...))
+```
+
+## Instalação
+
+Requisitos: **Python 3.11+** e **Git**.
 
 ```shell
-git clone https://github.com/seu-usuario/AutoChangelog.git
+pip install git+https://github.com/manteguinha/AutoChangelog.git
+
+# com suporte à Anthropic (Claude)
+pip install "autochangelog[anthropic] @ git+https://github.com/manteguinha/AutoChangelog.git"
+```
+
+Ou, a partir de um clone:
+
+```shell
+git clone https://github.com/manteguinha/AutoChangelog.git
 cd AutoChangelog
+pip install .
 ```
 
-2. Execute o [changelog.py](/caminho/para/o/changelog.py) diretamente no diretório que deseja criar o CHANGELOG.md:
+## Uso
 
 ```shell
-python changelog.py /caminho/do/diretorio
+autochangelog                      # gera/atualiza o CHANGELOG.md do diretório atual
+autochangelog caminho/do/projeto   # em outro repositório
+autochangelog --simular            # mostra o resultado sem gravar
+autochangelog --versao 1.2.0       # lança as mudanças pendentes como 1.2.0 (data de hoje)
+autochangelog --versao auto        # usa a versão do package.json, pyproject.toml, Cargo.toml, composer.json ou VERSION
+autochangelog --incluir-todos      # inclui docs, testes, CI e manutenção em "Outros"
+autochangelog --regenerar          # recria o arquivo do zero
 ```
 
-### 📝 Configuração Adicional
+Também funciona com `python -m autochangelog`.
 
-Para a funcionalidade completa, certifique-se de que:
+| Opção                   | Descrição                                                                 |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `DIRETORIO`             | Repositório Git (padrão: diretório atual).                                |
+| `-s`, `--saida`         | Arquivo de saída, relativo à raiz do repositório (padrão: `CHANGELOG.md`). |
+| `-v`, `--versao`        | Lança as mudanças pendentes como a versão informada, ou `auto`.           |
+| `--ia`                  | `nenhuma` (padrão), `anthropic`, `openai` ou `ollama`.                    |
+| `-m`, `--modelo`        | Modelo do provedor de IA.                                                 |
+| `--incluir-todos`       | Inclui mudanças internas na seção "Outros".                               |
+| `--url-repositorio`     | URL web do repositório para os links (padrão: detectada do `origin`).    |
+| `--regenerar`           | Descarta o conteúdo atual e recria o arquivo.                             |
+| `--simular`             | Imprime o resultado em vez de gravar.                                     |
+| `-q`, `--silencioso`    | Mostra apenas avisos e erros.                                             |
+| `-V`, `--versao-ferramenta` | Mostra a versão do AutoChangelog.                                     |
 
-- Utilizando o [OpenCommit](https://github.com/di-sukharev/opencommit) o resultado fica ainda melhor.
-- Se for um arquivo Node.JS, deve existir um arquivo `package.json` para obter informações de versão.
-- O diretório está configurado como um repositório Git para registrar as alterações.
+### Fluxo de lançamento sugerido
 
-## 💖 Contribuindo
+```shell
+autochangelog --versao 1.2.0
+git add CHANGELOG.md && git commit -m "docs: changelog da versão 1.2.0"
+git tag v1.2.0 && git push --follow-tags
+```
 
-Se deseja contribuir para este projeto, aqui está como pode fazer:
+### Atualizar a cada commit (hook)
 
-1. Fork o projeto
-2. Crie sua Branch de Feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adicionando MinhaFeature'`)
-4. Faça push para a Branch (`git push origin feature/MinhaFeature`)
+```shell
+autochangelog hook instalar     # cria .git/hooks/post-commit
+autochangelog hook remover
+```
+
+O hook atualiza o `CHANGELOG.md` após cada commit (a alteração fica pronta para o próximo commit). Um
+hook `post-commit` já existente não é substituído sem `--forcar`.
+
+### Migrando de um CHANGELOG antigo
+
+Se o arquivo atual não estiver no formato Keep a Changelog (sem títulos `## [versão]`), a ferramenta
+não o altera e pede `--regenerar`, que recria o arquivo inteiro a partir do Git.
+
+## Modo com IA
+
+Com `--ia`, os commits de cada lançamento são enviados ao provedor escolhido, que devolve os itens
+reescritos e agrupados nas mesmas seções. Se algo falhar (sem chave, sem conexão, resposta inválida),
+aquele lançamento é gerado sem IA e um aviso é exibido — o changelog nunca fica sem ser gerado.
+Versões que já estão no arquivo não são reenviadas.
+
+| Provedor    | Como configurar                                                                                   | Modelo padrão   |
+| ----------- | ------------------------------------------------------------------------------------------------- | --------------- |
+| `anthropic` | `pip install "autochangelog[anthropic]"` e `ANTHROPIC_API_KEY`                                   | `claude-opus-5` |
+| `openai`    | `OPENAI_API_KEY`; `OPENAI_BASE_URL` para APIs compatíveis (Groq, OpenRouter, LM Studio...)      | `gpt-4o-mini`   |
+| `ollama`    | Ollama rodando localmente; `OLLAMA_HOST` se não for `http://localhost:11434`                     | `llama3.1`      |
+
+```shell
+export ANTHROPIC_API_KEY=...
+autochangelog --ia anthropic
+
+autochangelog --ia ollama --modelo qwen2.5
+```
+
+## Configuração
+
+As opções podem ficar em um arquivo `.autochangelog.toml` na raiz do repositório (ou na seção
+`[tool.autochangelog]` do `pyproject.toml`). A linha de comando tem precedência.
+
+```toml
+saida = "CHANGELOG.md"
+ia = "nenhuma"            # nenhuma | anthropic | openai | ollama
+modelo = "claude-opus-5"
+incluir_todos = false
+url_repositorio = "https://github.com/dono/projeto"
+tempo_limite_ia = 120     # segundos
+```
+
+## Desenvolvimento
+
+```shell
+pip install -e ".[dev]"
+ruff check . && ruff format --check .
+pytest
+```
+
+Estrutura:
+
+```
+autochangelog/
+  cli.py           # linha de comando
+  config.py        # leitura de .autochangelog.toml / pyproject.toml
+  git.py           # tags, commits e remoto
+  commits.py       # Conventional Commits
+  categorias.py    # seções do Keep a Changelog
+  gerador.py       # monta o changelog (com ou sem IA)
+  renderizador.py  # Markdown
+  arquivo.py       # atualização segura do arquivo existente
+  versao.py        # detecção de versão
+  hook.py          # hook post-commit
+  ia/              # provedores Anthropic, OpenAI e Ollama
+tests/
+```
+
+## Contribuindo
+
+1. Faça um fork do projeto
+2. Crie uma branch (`git checkout -b feat/minha-feature`)
+3. Faça commits no padrão Conventional Commits (`git commit -m "feat: minha feature"`)
+4. Rode `ruff` e `pytest`
 5. Abra um Pull Request
 
 ---

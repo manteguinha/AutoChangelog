@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autochangelog"
+version = "2.0.0"
+description = "Gera e mantém um CHANGELOG.md no padrão Keep a Changelog a partir do histórico Git, com ou sem IA."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Marcos Vinicius" }]
+keywords = ["changelog", "git", "conventional-commits", "keep-a-changelog", "ia"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Environment :: Console",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+dependencies = []
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=1.8"]
+dev = ["pytest>=8", "ruff>=0.6", "anthropic>=1.8"]
+
+[project.scripts]
+autochangelog = "autochangelog.cli:principal"
+
+[project.urls]
+Repositorio = "https://github.com/manteguinha/AutoChangelog"
+
+[tool.setuptools.packages.find]
+include = ["autochangelog*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.autochangelog]
+url_repositorio = "https://github.com/manteguinha/AutoChangelog"

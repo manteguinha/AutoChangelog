@@ -1,0 +1,174 @@
+name: AutoChangelog
+description: Gera e mantém o CHANGELOG.md no padrão Keep a Changelog a partir do histórico do Git, com ou sem IA.
+author: Marcos Vinicius
+branding:
+  icon: file-text
+  color: purple
+
+inputs:
+  diretorio:
+    description: Repositório Git a processar (padrão é o diretório de trabalho).
+    required: false
+    default: "."
+  saida:
+    description: Arquivo de saída, relativo à raiz do repositório (padrão é o configurado ou CHANGELOG.md).
+    required: false
+    default: ""
+  versao:
+    description: Lança as mudanças pendentes como esta versão, ou "auto" para ler do package.json, pyproject.toml etc.
+    required: false
+    default: ""
+  ia:
+    description: Provedor de IA (nenhuma, anthropic, openai ou ollama). Vazio usa a configuração do repositório.
+    required: false
+    default: ""
+  modelo:
+    description: Modelo do provedor de IA.
+    required: false
+    default: ""
+  incluir-todos:
+    description: '"true" inclui docs, testes, CI e manutenção na seção "Outros".'
+    required: false
+    default: "false"
+  url-repositorio:
+    description: URL web do repositório para os links (padrão é detectada do origin).
+    required: false
+    default: ""
+  regenerar:
+    description: '"true" recria o arquivo inteiro, descartando o conteúdo atual.'
+    required: false
+    default: "false"
+  commit:
+    description: '"true" faz commit e push do changelog atualizado na branch do checkout.'
+    required: false
+    default: "false"
+  mensagem-commit:
+    description: Mensagem do commit criado quando commit é "true".
+    required: false
+    default: "docs: atualiza o CHANGELOG.md [skip ci]"
+  python-version:
+    description: Versão do Python usada para rodar a ferramenta (3.11 ou superior).
+    required: false
+    default: "3.12"
+
+outputs:
+  alterado:
+    description: '"true" se o changelog foi criado ou alterado nesta execução.'
+    value: ${{ steps.gerar.outputs.alterado }}
+  arquivo:
+    description: Caminho do changelog relativo à raiz do repositório.
+    value: ${{ steps.gerar.outputs.arquivo }}
+  commit:
+    description: SHA do commit criado, quando commit é "true" e houve alteração.
+    value: ${{ steps.commit.outputs.sha }}
+
+runs:
+  using: composite
+  steps:
+    - name: Preparar o Python
+      id: python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        update-environment: false
+
+    - name: Instalar o AutoChangelog
+      id: instalar
+      shell: bash
+      env:
+        PYTHON: ${{ steps.python.outputs.python-path }}
+        ACAO: ${{ github.action_path }}
+        AMBIENTE: ${{ runner.temp }}/autochangelog-venv
+      run: |
+        set -euo pipefail
+        # Ambiente isolado: não altera o Python nem os pacotes do restante do job.
+        "$PYTHON" -m venv "$AMBIENTE"
+        if [ -x "$AMBIENTE/bin/python" ]; then
+          VENV_PYTHON="$AMBIENTE/bin/python"
+        else
+          VENV_PYTHON="$AMBIENTE/Scripts/python.exe"
+        fi
+        "$VENV_PYTHON" -m pip install --quiet --disable-pip-version-check "$ACAO"
+        echo "python=$VENV_PYTHON" >> "$GITHUB_OUTPUT"
+
+    - name: Gerar o changelog
+      id: gerar
+      shell: bash
+      env:
+        PYTHON: ${{ steps.instalar.outputs.python }}
+        ACAO: ${{ github.action_path }}
+        DIRETORIO: ${{ inputs.diretorio }}
+        SAIDA: ${{ inputs.saida }}
+        VERSAO: ${{ inputs.versao }}
+        IA: ${{ inputs.ia }}
+        MODELO: ${{ inputs.modelo }}
+        INCLUIR_TODOS: ${{ inputs.incluir-todos }}
+        URL_REPOSITORIO: ${{ inputs.url-repositorio }}
+        REGENERAR: ${{ inputs.regenerar }}
+      run: |
+        set -euo pipefail
+        if [ "$(git -C "$DIRETORIO" rev-parse --is-shallow-repository)" = "true" ]; then
+          echo "::warning title=AutoChangelog::O checkout está raso (shallow) e o changelog pode ficar incompleto. Use actions/checkout com 'fetch-depth: 0'."
+        fi
+
+        ARGUMENTOS=(gerar "$DIRETORIO")
+        [ -n "$SAIDA" ] && ARGUMENTOS+=(--saida "$SAIDA")
+        [ -n "$VERSAO" ] && ARGUMENTOS+=(--versao "$VERSAO")
+        [ -n "$IA" ] && ARGUMENTOS+=(--ia "$IA")
+        [ -n "$MODELO" ] && ARGUMENTOS+=(--modelo "$MODELO")
+        [ -n "$URL_REPOSITORIO" ] && ARGUMENTOS+=(--url-repositorio "$URL_REPOSITORIO")
+        [ "$INCLUIR_TODOS" = "true" ] && ARGUMENTOS+=(--incluir-todos)
+        [ "$REGENERAR" = "true" ] && ARGUMENTOS+=(--regenerar)
+
+        RAIZ="$(git -C "$DIRETORIO" rev-parse --show-toplevel)"
+        # Resolve a saída e o provedor de IA efetivos (entrada > .autochangelog.toml > padrão).
+        {
+          read -r ARQUIVO
+          read -r IA_EFETIVA
+        } < <("$PYTHON" -c 'import sys
+        from pathlib import Path
+        from autochangelog.config import carregar_configuracao
+        configuracao = carregar_configuracao(Path(sys.argv[1]))
+        print(sys.argv[2] or configuracao.saida)
+        print(sys.argv[3] or configuracao.ia)' "$RAIZ" "$SAIDA" "$IA")
+        if [ "$IA_EFETIVA" = "anthropic" ]; then
+          "$PYTHON" -m pip install --quiet --disable-pip-version-check "$ACAO[anthropic]"
+        fi
+
+        CAMINHO="$RAIZ/$ARQUIVO"
+        ANTES=""
+        [ -f "$CAMINHO" ] && ANTES="$(git -C "$RAIZ" hash-object "$CAMINHO")"
+
+        "$PYTHON" -m autochangelog "${ARGUMENTOS[@]}"
+
+        DEPOIS=""
+        [ -f "$CAMINHO" ] && DEPOIS="$(git -C "$RAIZ" hash-object "$CAMINHO")"
+        if [ "$ANTES" != "$DEPOIS" ]; then
+          echo "alterado=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "alterado=false" >> "$GITHUB_OUTPUT"
+        fi
+        echo "arquivo=$ARQUIVO" >> "$GITHUB_OUTPUT"
+        echo "raiz=$RAIZ" >> "$GITHUB_OUTPUT"
+
+    - name: Fazer commit do changelog
+      id: commit
+      if: inputs.commit == 'true' && steps.gerar.outputs.alterado == 'true'
+      shell: bash
+      env:
+        RAIZ: ${{ steps.gerar.outputs.raiz }}
+        ARQUIVO: ${{ steps.gerar.outputs.arquivo }}
+        MENSAGEM: ${{ inputs.mensagem-commit }}
+      run: |
+        set -euo pipefail
+        cd "$RAIZ"
+        if ! BRANCH="$(git symbolic-ref --quiet --short HEAD)"; then
+          echo "::error title=AutoChangelog::'commit: true' precisa de uma branch no checkout, mas o HEAD está destacado. Em tags e pull requests, use 'ref: main' (ou outra branch) no actions/checkout."
+          exit 1
+        fi
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -- "$ARQUIVO"
+        git commit --quiet -m "$MENSAGEM" -- "$ARQUIVO"
+        git push origin "HEAD:refs/heads/$BRANCH"
+        echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"

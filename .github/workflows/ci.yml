@@ -27,3 +27,25 @@ jobs:
         run: ruff format --check .
       - name: Testes
         run: pytest
+
+  acao:
+    name: GitHub Action
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rodar a Action
+        id: changelog
+        uses: ./
+      - name: Rodar de novo (não deve alterar nada)
+        id: repeticao
+        uses: ./
+      - name: Conferir as saídas
+        env:
+          ARQUIVO: ${{ steps.changelog.outputs.arquivo }}
+          ALTERADO: ${{ steps.repeticao.outputs.alterado }}
+        run: |
+          test "$ARQUIVO" = "CHANGELOG.md"
+          test -f "$ARQUIVO"
+          test "$ALTERADO" = "false"

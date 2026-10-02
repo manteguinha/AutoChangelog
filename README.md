@@ -12,6 +12,7 @@
   <a href="#sobre">Sobre</a> •
   <a href="#instalação">Instalação</a> •
   <a href="#uso">Uso</a> •
+  <a href="#github-action">GitHub Action</a> •
   <a href="#modo-com-ia">Modo com IA</a> •
   <a href="#configuração">Configuração</a> •
   <a href="#desenvolvimento">Desenvolvimento</a>
@@ -133,6 +134,125 @@ hook `post-commit` já existente não é substituído sem `--forcar`.
 Se o arquivo atual não estiver no formato Keep a Changelog (sem títulos `## [versão]`), a ferramenta
 não o altera e pede `--regenerar`, que recria o arquivo inteiro a partir do Git.
 
+## GitHub Action
+
+O AutoChangelog também roda como uma GitHub Action, para manter o changelog atualizado
+automaticamente no repositório. O uso local continua igual; a Action usa o mesmo comando e lê o
+mesmo `.autochangelog.toml`.
+
+### Atualizar a cada push na `main`
+
+Crie `.github/workflows/changelog.yml` no seu projeto:
+
+```yaml
+name: Changelog
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico e tags completos
+      - uses: manteguinha/AutoChangelog@main
+        with:
+          commit: true
+```
+
+Cada push refaz o bloco **[Não lançado]** e, se algo mudou, a Action faz commit do `CHANGELOG.md`.
+Commits feitos com o `GITHUB_TOKEN` não disparam outro workflow, então não há loop.
+
+### Lançar uma versão ao criar uma tag
+
+```yaml
+name: Changelog da versão
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main # o commit vai para a main, não para a tag
+          fetch-depth: 0
+      - uses: manteguinha/AutoChangelog@main
+        with:
+          commit: true
+          mensagem-commit: "docs: changelog da versão ${{ github.ref_name }} [skip ci]"
+```
+
+### Conferir em pull requests
+
+Sem `commit`, a Action só gera o arquivo no runner; use a saída `alterado` para avisar ou falhar:
+
+```yaml
+      - uses: manteguinha/AutoChangelog@main
+        id: changelog
+      - if: steps.changelog.outputs.alterado == 'true'
+        run: git diff -- CHANGELOG.md
+```
+
+### Com IA
+
+Guarde a chave em **Settings → Secrets and variables → Actions** e passe-a como variável de ambiente:
+
+```yaml
+      - uses: manteguinha/AutoChangelog@main
+        with:
+          ia: anthropic
+          commit: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+O pacote `anthropic` é instalado automaticamente quando o provedor é `anthropic`.
+
+### Entradas e saídas
+
+| Entrada           | Descrição                                                                   | Padrão |
+| ----------------- | --------------------------------------------------------------------------- | ------ |
+| `diretorio`       | Repositório Git a processar.                                                | `.` |
+| `saida`           | Arquivo de saída, relativo à raiz do repositório.                           | configuração ou `CHANGELOG.md` |
+| `versao`          | Lança as mudanças pendentes como esta versão, ou `auto`.                   | — |
+| `ia`              | `nenhuma`, `anthropic`, `openai` ou `ollama`.                               | configuração ou `nenhuma` |
+| `modelo`          | Modelo do provedor de IA.                                                   | — |
+| `incluir-todos`   | `true` inclui mudanças internas na seção "Outros".                          | `false` |
+| `url-repositorio` | URL web do repositório para os links.                                       | detectada do `origin` |
+| `regenerar`       | `true` recria o arquivo do zero.                                            | `false` |
+| `commit`          | `true` faz commit e push do changelog na branch do checkout.               | `false` |
+| `mensagem-commit` | Mensagem do commit.                                                         | `docs: atualiza o CHANGELOG.md [skip ci]` |
+| `python-version`  | Python usado pela ferramenta (3.11+).                                       | `3.12` |
+
+| Saída      | Descrição                                                  |
+| ---------- | ---------------------------------------------------------- |
+| `alterado` | `true` se o changelog foi criado ou alterado.              |
+| `arquivo`  | Caminho do changelog relativo à raiz do repositório.       |
+| `commit`   | SHA do commit criado (quando `commit` é `true`).           |
+
+Observações:
+
+- Use `fetch-depth: 0` no `actions/checkout`; com um checkout raso o changelog fica incompleto (a
+  Action avisa).
+- `commit: true` precisa de `permissions: contents: write` e de uma branch no checkout. Em tags e
+  pull requests, informe `ref:` no `actions/checkout`.
+- A Action roda em um ambiente Python isolado e não altera o Python do restante do job.
+- `@main` sempre usa a versão mais recente. Para fixar uma versão, use uma tag (ex.: `@v2`) ou o SHA
+  de um commit.
+
 ## Modo com IA
 
 Com `--ia`, os commits de cada lançamento são enviados ao provedor escolhido, que devolve os itens
@@ -190,6 +310,7 @@ autochangelog/
   versao.py        # detecção de versão
   hook.py          # hook post-commit
   ia/              # provedores Anthropic, OpenAI e Ollama
+action.yml         # GitHub Action
 tests/
 ```
 
